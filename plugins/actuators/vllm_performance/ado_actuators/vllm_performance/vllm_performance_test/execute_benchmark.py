@@ -142,10 +142,16 @@ def execute_benchmark(
     timeout = retries_timeout
     for i in range(benchmark_retries):
         try:
-            subprocess.check_call(command, env=env)  # noqa: S603
+            subprocess.run(  # noqa: S603
+                command, env=env, capture_output=True, text=True, check=True
+            )
             break
         except subprocess.CalledProcessError as e:
             logger.warning(f"Command failed with return code {e.returncode}")
+            if e.stdout:
+                logger.error(f"Command stdout:\n{e.stdout}")
+            if e.stderr:
+                logger.error(f"Command stderr:\n{e.stderr}")
             if i < benchmark_retries - 1:
                 logger.warning(
                     f"Will try again after {timeout} seconds. {benchmark_retries - 1 - i} retries remaining"
@@ -156,7 +162,12 @@ def execute_benchmark(
                 logger.error(
                     f"Failed to execute benchmark after {benchmark_retries} attempts"
                 )
-                raise VLLMBenchmarkError(f"Failed to execute benchmark {e}") from e
+                error_msg = f"Failed to execute benchmark {e}"
+                if e.stderr:
+                    error_msg += f"\nStderr: {e.stderr}"
+                if e.stdout:
+                    error_msg += f"\nStdout: {e.stdout}"
+                raise VLLMBenchmarkError(error_msg) from e
 
     try:
         retval = get_results(f_name=f_name)
