@@ -135,7 +135,6 @@ def execute_benchmark(
         command.extend(["--max-concurrency", f"{max_concurrency!s}"])
     if custom_args is not None:
         for key, value in custom_args.items():
-            print (f"key: {key} value: {value}" )
             if key =="--skip-tokenizer-init":
                 command.extend([key])
             else:
