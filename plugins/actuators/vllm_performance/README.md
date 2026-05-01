@@ -195,20 +195,23 @@ create the actuator configuration with:
 ado create actuatorconfiguration -f vllm_performance_actuatorconfiguration.yaml
 ```
 
-
 ## KServe Deployment Mode
 
-The vllm_performance actuator supports deploying vLLM using KServe InferenceService instead of standard Kubernetes Deployments. This provides native KServe integration with benefits including standardized serving interfaces, better observability, and potential for auto-scaling.
+The vllm_performance actuator supports deploying vLLM using KServe
+InferenceService instead of standard Kubernetes Deployments. This provides
+native KServe integration with benefits including standardized serving
+interfaces, better observability, and potential for auto-scaling.
 
 ### Configuration
 
-To enable KServe deployment strategy, add the following parameters to your actuator configuration:
+To enable KServe deployment strategy, add the following parameters to your
+actuator configuration:
 
 ```yaml
 parameters:
-  deployment_strategy: kserve  # Use 'k8s_deployment' for standard Deployments (default)
-  serving_runtime_template: null  # Optional: path to custom ServingRuntime template
-  inference_service_template: null  # Optional: path to custom InferenceService template
+  deployment_strategy: kserve  # Use 'k8s_deployment' (default)
+  serving_runtime_template: null  # Optional: custom ServingRuntime
+  inference_service_template: null  # Optional: custom InferenceService
 ```
 
 ### Available Deployment Strategies
@@ -218,7 +221,8 @@ parameters:
 
 ### Example Configuration
 
-See [`yamls/vllm_kserve_example.yaml`](yamls/vllm_kserve_example.yaml) for a complete example of using KServe deployment mode.
+See [`yamls/vllm_kserve_example.yaml`](yamls/vllm_kserve_example.yaml) for a
+complete example of using KServe deployment mode.
 
 ### Requirements
 
@@ -228,20 +232,24 @@ See [`yamls/vllm_kserve_example.yaml`](yamls/vllm_kserve_example.yaml) for a com
 
 ### Prometheus Metrics
 
-The InferenceService is automatically configured with Prometheus annotations for metrics collection:
+The InferenceService is automatically configured with Prometheus annotations
+for metrics collection:
 
 - `prometheus.io/scrape: "true"` - Enables Prometheus scraping
 - `prometheus.io/path: "/metrics"` - Specifies the metrics endpoint
 - `prometheus.io/port: "8000"` - Specifies the port for metrics
 
-These annotations allow Prometheus to automatically discover and scrape metrics from the vLLM inference service, providing observability into model serving performance.
+These annotations allow Prometheus to automatically discover and scrape metrics
+from the vLLM inference service, providing observability into model serving
+performance.
 
 ### Benefits of KServe Mode
 
 - **Native KServe Integration**: Leverage KServe's standardized serving interface
 - **Better Observability**: Enhanced metrics and monitoring through KServe
 - **Consistent API**: Standardized prediction API across different model servers
-- **Future-Ready**: Positioned for advanced features like canary deployments and traffic splitting
+- **Future-Ready**: Positioned for advanced features like canary deployments
+  and traffic splitting
 
 ### Custom Templates
 
@@ -254,7 +262,8 @@ parameters:
   inference_service_template: "path/to/custom/inference_service.yaml"
 ```
 
-Custom templates must follow the KServe API specifications and include the required placeholder values that will be replaced during deployment.
+Custom templates must follow the KServe API specifications and include the
+required placeholder values that will be replaced during deployment.
 
 Note: You can have multiple configurations for an actuator.
 

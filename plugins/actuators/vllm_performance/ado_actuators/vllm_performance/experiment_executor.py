@@ -220,6 +220,9 @@ def _create_environment(
                         otel_traces_endpoint=otel_traces_endpoint,
                         check_interval=check_interval,
                         timeout=timeout,
+                        deployment_strategy=actuator.deployment_strategy,
+                        serving_runtime_template=actuator.serving_runtime_template,
+                        inference_service_template=actuator.inference_service_template,
                     )
                     # Update manager
                     env_manager.done_creating.remote(identifier=env.k8s_name)

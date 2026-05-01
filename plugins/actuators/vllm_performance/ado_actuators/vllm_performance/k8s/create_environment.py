@@ -212,6 +212,7 @@ def create_test_environment(
     :param inference_service_template: InferenceService template (for KSERVE)
     :return:
     """
+    logger.info(f"Deploying teste environment with strategy: {deployment_strategy}")
     if deployment_strategy == DeploymentStrategy.KSERVE:
         create_kserve_environment(
             k8s_name=k8s_name,
