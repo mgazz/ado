@@ -105,6 +105,7 @@ class VLLMPerformanceTest(ActuatorBase):
                     pvc_name=params.pvc_name,
                     pvc_template=params.pvc_template,
                     otel_traces_endpoint=params.otel_traces_endpoint,
+                    deployment_strategy=params.deployment_strategy,
                 )
             except Exception as error:
                 self.log.warning(

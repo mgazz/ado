@@ -1,0 +1,73 @@
+# Copyright IBM Corporation 2025, 2026
+# SPDX-License-Identifier: MIT
+
+# Example DiscoverySpace using KServe deployment strategy
+# This demonstrates how to configure the vllm_performance actuator to use
+# KServe InferenceService instead of standard Kubernetes Deployments
+
+apiVersion: ado.org/v1
+kind: DiscoverySpace
+metadata:
+  name: vllm-kserve-example
+  description: Example space using KServe for vLLM deployment
+
+entitySpace:
+  - identifier: model
+    domain:
+      type: categorical
+      values:
+        - "meta-llama/Llama-3.2-1B-Instruct"
+        - "meta-llama/Llama-3.2-3B-Instruct"
+  
+  - identifier: n_gpus
+    domain:
+      type: discrete
+      lower: 1
+      upper: 2
+  
+  - identifier: gpu_memory_utilization
+    domain:
+      type: continuous
+      lower: 0.8
+      upper: 0.95
+
+measurementSpace:
+  - identifier: throughput
+    unit: "tokens/s"
+  
+  - identifier: latency_p50
+    unit: "ms"
+  
+  - identifier: latency_p99
+    unit: "ms"
+
+experiments:
+  - identifier: vllm_performance.workload_performance
+    parameters:
+      image: "vllm/vllm-openai:v0.6.3"
+      n_cpus: 8
+      memory: "128Gi"
+      gpu_type: "NVIDIA-A100-80GB-PCIe"
+      max_batch_tokens: 16384
+      dtype: "auto"
+      workload: "sharegpt"
+      num_prompts: 100
+      request_rate: 10
+
+actuatorConfiguration:
+  actuator: vllm_performance
+  parameters:
+    namespace: "vllm-testing"
+    in_cluster: true
+    verify_ssl: false
+    max_environments: 2
+    # KServe-specific configuration
+    deployment_strategy: "kserve"
+    # Optional: custom templates for KServe resources
+    # serving_runtime_template: "path/to/custom/serving_runtime.yaml"
+    # inference_service_template: "path/to/custom/inference_service.yaml"
+    # Shared configuration
+    pvc_name: "vllm-model-cache"
+    hf_token: "${HF_TOKEN}"  # Set via environment variable
+
+# Made with Bob

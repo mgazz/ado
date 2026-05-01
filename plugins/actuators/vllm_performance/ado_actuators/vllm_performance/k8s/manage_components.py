@@ -7,6 +7,7 @@ import math
 import time
 import uuid
 
+from ado_actuators.vllm_performance.deployment_strategy import DeploymentStrategy
 from ado_actuators.vllm_performance.k8s import (
     K8sConnectionError,
 )
@@ -40,6 +41,7 @@ class ComponentsManager:
         init_pvc: bool = False,
         pvc_name: None | str = None,
         pvc_template: None | str = None,
+        deployment_strategy: DeploymentStrategy = DeploymentStrategy.K8S_DEPLOYMENT,
     ) -> None:
         """
         set up for configuration usage
@@ -49,6 +51,7 @@ class ComponentsManager:
         :param init_pvc: flag to decide whether to initialize the PVC for the experiment
         :param pvc_name: the name of the pvc to be created
         :param pvc_template: the name of the template file for creating PVCs
+        :param deployment_strategy: deployment strategy (K8S_DEPLOYMENT or KSERVE)
         """
         try:
             if in_cluster:
@@ -61,6 +64,8 @@ class ComponentsManager:
                 client.Configuration.set_default(configuration)
             self.kube_client_V1 = client.CoreV1Api()
             self.kube_client = client.AppsV1Api()
+            # Initialize KServe client for custom resources
+            self.kserve_client = client.CustomObjectsApi()
             # this is just to make sure we are authenticated to the cluster
             # and fail immediately otherwise.
             self.kube_client_V1.list_namespaced_pod(namespace=namespace)
@@ -77,6 +82,7 @@ class ComponentsManager:
             raise
 
         self.namespace = namespace
+        self.deployment_strategy = deployment_strategy
 
         # We do this only once when creating a ComponentsManager in the EnvironmentManager because
         # we want the PVC to be shared by all deployments we are testing with the same operation.
@@ -392,6 +398,264 @@ class ComponentsManager:
                 return
         logger.error("Timed out waiting for deployment to get ready")
         raise Exception("Timed out waiting for deployment to get ready")
+
+    def create_serving_runtime(
+        self,
+        k8s_name: str,
+        model: str,
+        gpu_type: str = "NVIDIA-A100-80GB-PCIe",
+        node_selector: dict[str, str] | None = None,
+        image: str = "vllm/vllm-openai:v0.6.3",
+        image_pull_secret_name: str = "",
+        n_gpus: int = 1,
+        n_cpus: int = 8,
+        memory: str = "128Gi",
+        max_batch_tokens: int = 16384,
+        gpu_memory_utilization: float = 0.9,
+        dtype: VLLMDtype = VLLMDtype.AUTO,
+        cpu_offload: int = 0,
+        max_num_seq: int = 256,
+        template: str | None = None,
+        claim_name: str | None = None,
+        hf_token: str | None = None,
+        enforce_eager: bool = False,
+        skip_tokenizer_init: bool = False,
+        io_processor_plugin: str | None = None,
+        otel_traces_endpoint: str | None = None,
+    ) -> None:
+        """
+        Create KServe ServingRuntime
+        :param k8s_name: ServingRuntime name
+        :param model: LLM model name
+        :param gpu_type: gpu type, for example NVIDIA-A100-80GB-PCIe, Tesla-V100-PCIE-16GB, etc.
+        :param node_selector: optional node selector
+        :param image: image name to use
+        :param image_pull_secret_name: name of the image pull secret
+        :param n_gpus: number of GPUs to use in VLLM
+        :param n_cpus: number of CPUs for VLLM pod
+        :param memory: memory for VLLM pod
+        :param max_batch_tokens: Vllm parameter - maximum number of batched tokens per iteration
+        :param gpu_memory_utilization: VLLM parameter - GPU memory utilization
+        :param dtype: VLLM parameter - data type for model weights and activations
+        :param cpu_offload: VLLM parameter - the space in GiB to offload to CPU, per GPU
+        :param max_num_seq: VLLM parameter - Maximum number of sequences per iteration.
+        :param template: template for ServingRuntime yaml
+        :param claim_name: PVC name
+        :param hf_token: huggingface token
+        :param enforce_eager: flag to enforce using Pytorch eager mode
+        :param skip_tokenizer_init: flag to skip tokenizer initialization in vLLM
+        :param io_processor_plugin: name of the IO processor plugin to be used by vLLM
+        :param otel_traces_endpoint: OpenTelemetry traces endpoint URL
+        :return:
+        """
+        if node_selector is None:
+            node_selector = {}
+
+        serving_runtime_yaml = ComponentsYaml.serving_runtime_yaml(
+            k8s_name=k8s_name,
+            model=model,
+            gpu_type=gpu_type,
+            node_selector=node_selector,
+            image=image,
+            image_pull_secret_name=image_pull_secret_name,
+            n_gpus=n_gpus,
+            n_cpus=n_cpus,
+            memory=memory,
+            max_batch_tokens=max_batch_tokens,
+            gpu_memory_utilization=gpu_memory_utilization,
+            dtype=dtype,
+            cpu_offload=cpu_offload,
+            max_num_seq=max_num_seq,
+            template=template,
+            claim_name=claim_name,
+            hf_token=hf_token,
+            enforce_eager=enforce_eager,
+            skip_tokenizer_init=skip_tokenizer_init,
+            io_processor_plugin=io_processor_plugin,
+            otel_traces_endpoint=otel_traces_endpoint,
+            namespace=self.namespace,
+        )
+        logger.debug(json.dumps(serving_runtime_yaml, indent=2))
+
+        try:
+            self.kserve_client.create_namespaced_custom_object(
+                group="serving.kserve.io",
+                version="v1alpha1",
+                namespace=self.namespace,
+                plural="servingruntimes",
+                body=serving_runtime_yaml,
+            )
+        except ApiException as e:
+            logger.error(f"error creating serving runtime {e}")
+            raise
+
+    def create_inference_service(
+        self,
+        k8s_name: str,
+        gpu_type: str = "NVIDIA-A100-80GB-PCIe",
+        node_selector: dict[str, str] | None = None,
+        template: str | None = None,
+    ) -> None:
+        """
+        Create KServe InferenceService
+        :param k8s_name: InferenceService name (must match ServingRuntime name)
+        :param gpu_type: gpu type, for example NVIDIA-A100-80GB-PCIe, Tesla-V100-PCIE-16GB, etc.
+        :param node_selector: optional node selector
+        :param template: template for InferenceService yaml
+        :return:
+        """
+        if node_selector is None:
+            node_selector = {}
+
+        inference_service_yaml = ComponentsYaml.inference_service_yaml(
+            k8s_name=k8s_name,
+            gpu_type=gpu_type,
+            node_selector=node_selector,
+            template=template,
+            namespace=self.namespace,
+        )
+        logger.debug(json.dumps(inference_service_yaml, indent=2))
+
+        try:
+            self.kserve_client.create_namespaced_custom_object(
+                group="serving.kserve.io",
+                version="v1beta1",
+                namespace=self.namespace,
+                plural="inferenceservices",
+                body=inference_service_yaml,
+            )
+        except ApiException as e:
+            logger.error(f"error creating inference service {e}")
+            raise
+
+    def check_serving_runtime_exists(self, k8s_name: str) -> bool:
+        """
+        Check if ServingRuntime exists
+        :param k8s_name: ServingRuntime name
+        :return: boolean
+        """
+        try:
+            runtimes = self.kserve_client.list_namespaced_custom_object(
+                group="serving.kserve.io",
+                version="v1alpha1",
+                namespace=self.namespace,
+                plural="servingruntimes",
+            )
+        except ApiException as e:
+            logger.error(f"error getting serving runtime list {e}")
+            return False
+        return any(
+            runtime["metadata"]["name"] == k8s_name for runtime in runtimes["items"]
+        )
+
+    def check_inference_service_exists(self, k8s_name: str) -> bool:
+        """
+        Check if InferenceService exists
+        :param k8s_name: InferenceService name
+        :return: boolean
+        """
+        try:
+            services = self.kserve_client.list_namespaced_custom_object(
+                group="serving.kserve.io",
+                version="v1beta1",
+                namespace=self.namespace,
+                plural="inferenceservices",
+            )
+        except ApiException as e:
+            logger.error(f"error getting inference service list {e}")
+            return False
+        return any(
+            service["metadata"]["name"] == k8s_name for service in services["items"]
+        )
+
+    def delete_serving_runtime(self, k8s_name: str) -> None:
+        """
+        Delete ServingRuntime
+        :param k8s_name: ServingRuntime name
+        :return:
+        """
+        try:
+            self.kserve_client.delete_namespaced_custom_object(
+                group="serving.kserve.io",
+                version="v1alpha1",
+                namespace=self.namespace,
+                plural="servingruntimes",
+                name=k8s_name,
+                body=client.V1DeleteOptions(
+                    propagation_policy="Foreground", grace_period_seconds=5
+                ),
+            )
+        except ApiException as e:
+            logger.error(f"error deleting serving runtime {e}")
+            raise
+
+    def delete_inference_service(self, k8s_name: str) -> None:
+        """
+        Delete InferenceService
+        :param k8s_name: InferenceService name
+        :return:
+        """
+        try:
+            self.kserve_client.delete_namespaced_custom_object(
+                group="serving.kserve.io",
+                version="v1beta1",
+                namespace=self.namespace,
+                plural="inferenceservices",
+                name=k8s_name,
+                body=client.V1DeleteOptions(
+                    propagation_policy="Foreground", grace_period_seconds=5
+                ),
+            )
+        except ApiException as e:
+            logger.error(f"error deleting inference service {e}")
+            raise
+
+    def _inference_service_ready(self, k8s_name: str) -> bool:
+        """
+        Check if InferenceService is ready
+        :param k8s_name: InferenceService name
+        :return: boolean
+        """
+        try:
+            inference_service = self.kserve_client.get_namespaced_custom_object(
+                group="serving.kserve.io",
+                version="v1beta1",
+                namespace=self.namespace,
+                plural="inferenceservices",
+                name=k8s_name,
+            )
+        except ApiException as e:
+            logger.error(f"error getting inference service {e}")
+            return False
+
+        # Check status conditions
+        status = inference_service.get("status", {})
+        conditions = status.get("conditions", [])
+
+        # Look for Ready condition
+        for condition in conditions:
+            if condition.get("type") == "Ready":
+                return condition.get("status") == "True"
+
+        return False
+
+    def wait_inference_service_ready(
+        self, k8s_name: str, check_interval: int = 5, timeout: int = 1200
+    ) -> None:
+        """
+        Wait for InferenceService to become ready
+        :param k8s_name: InferenceService name
+        :param check_interval: wait interval in seconds
+        :param timeout: timeout in seconds
+        :return: None
+        """
+        n_checks = math.ceil(timeout / check_interval)
+        for _ in range(n_checks):
+            time.sleep(check_interval)
+            if self._inference_service_ready(k8s_name=k8s_name):
+                return
+        logger.error("Timed out waiting for InferenceService to get ready")
+        raise Exception("Timed out waiting for InferenceService to get ready")
 
 
 if __name__ == "__main__":

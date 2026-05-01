@@ -1,0 +1,38 @@
+# Copyright IBM Corporation 2025, 2026
+# SPDX-License-Identifier: MIT
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    serving.kserve.io/deploymentMode: RawDeployment
+    serving.kserve.io/headless-svc: "false"
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8000"
+  labels:
+    networking.kserve.dev/visibility: cluster-local
+  name: PLACEHOLDER_K8S_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+spec:
+  predictor:
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - PLACEHOLDER_K8S_NAME
+            topologyKey: kubernetes.io/hostname
+      nodeAffinity: {}
+    nodeSelector: {}
+    runtime: PLACEHOLDER_K8S_NAME
+    maxReplicas: 1
+    minReplicas: 1
+    model:
+      modelFormat:
+        name: vLLM
+      name: ""
+
+# Made with Bob

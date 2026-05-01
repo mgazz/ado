@@ -1,0 +1,48 @@
+# Copyright IBM Corporation 2025, 2026
+# SPDX-License-Identifier: MIT
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  labels:
+    app: PLACEHOLDER_K8S_NAME
+  name: PLACEHOLDER_K8S_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+spec:
+  containers:
+  - args: []
+    command:
+    - vllm
+    env: []
+    image: PLACEHOLDER_IMAGE
+    imagePullPolicy: Always
+    name: kserve-container
+    ports:
+    - containerPort: 8000
+      protocol: TCP
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: 8000
+      periodSeconds: 2
+    resources:
+      limits:
+        cpu: PLACEHOLDER_CPU
+        memory: PLACEHOLDER_MEMORY
+        nvidia.com/gpu: PLACEHOLDER_GPU
+      requests:
+        cpu: PLACEHOLDER_CPU
+        memory: PLACEHOLDER_MEMORY
+        nvidia.com/gpu: PLACEHOLDER_GPU
+    securityContext:
+      capabilities:
+        drop:
+          - MKNOD
+    volumeMounts: []
+  imagePullSecrets: []
+  multiModel: false
+  supportedModelFormats:
+  - autoSelect: true
+    name: vLLM
+  volumes: []
+
+# Made with Bob

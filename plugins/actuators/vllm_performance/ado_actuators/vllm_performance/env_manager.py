@@ -11,6 +11,7 @@ import ray
 from ado_actuators.vllm_performance.deployment_management import (
     DeploymentConflictManager,
 )
+from ado_actuators.vllm_performance.deployment_strategy import DeploymentStrategy
 from ado_actuators.vllm_performance.k8s import K8sEnvironmentCreationError
 from ado_actuators.vllm_performance.k8s.manage_components import (
     ComponentsManager,
@@ -113,6 +114,7 @@ class EnvironmentManager:
         pvc_name: str | None = None,
         pvc_template: str | None = None,
         otel_traces_endpoint: str | None = None,
+        deployment_strategy: DeploymentStrategy = DeploymentStrategy.K8S_DEPLOYMENT,
     ) -> None:
         """
         Initialize
@@ -123,6 +125,7 @@ class EnvironmentManager:
         :param pvc_name: name of the PVC to be created / used
         :param pvc_template: template of the PVC to be created
         :param otel_traces_endpoint: OpenTelemetry traces endpoint URL
+        :param deployment_strategy: deployment strategy (K8S_DEPLOYMENT or KSERVE)
         """
         self.in_use_environments: dict[str, Environment] = {}
         self.free_environments: list[Environment] = []
@@ -133,6 +136,7 @@ class EnvironmentManager:
         self.in_cluster = in_cluster
         self.verify_ssl = verify_ssl
         self.otel_traces_endpoint = otel_traces_endpoint
+        self.deployment_strategy = deployment_strategy
 
         # component manager for cleanup
         self.manager = ComponentsManager(
@@ -142,23 +146,39 @@ class EnvironmentManager:
             init_pvc=True,
             pvc_name=pvc_name,
             pvc_template=pvc_template,
+            deployment_strategy=deployment_strategy,
         )
 
     def _delete_environment_k8s_resources(self, k8s_name: str) -> None:
         """
-        Deletes a deployment. Intended to be used for cleanup or error recovery
-        param: identifier: the deployment identifier
+        Deletes deployment resources based on deployment strategy.
+        Intended to be used for cleanup or error recovery.
+        :param k8s_name: the deployment identifier
         """
-        try:
-            self.manager.delete_service(k8s_name=k8s_name)
-        except ApiException as e:
-            if e.reason != "Not Found":
-                raise e
-        try:
-            self.manager.delete_deployment(k8s_name=k8s_name)
-        except ApiException as e:
-            if e.reason != "Not Found":
-                raise e
+        if self.manager.deployment_strategy == DeploymentStrategy.KSERVE:
+            # Delete KServe resources
+            try:
+                self.manager.delete_inference_service(k8s_name=k8s_name)
+            except ApiException as e:
+                if e.reason != "Not Found":
+                    raise e
+            try:
+                self.manager.delete_serving_runtime(k8s_name=k8s_name)
+            except ApiException as e:
+                if e.reason != "Not Found":
+                    raise e
+        elif self.manager.deployment_strategy == DeploymentStrategy.K8S_DEPLOYMENT:
+            # Delete standard K8s resources
+            try:
+                self.manager.delete_service(k8s_name=k8s_name)
+            except ApiException as e:
+                if e.reason != "Not Found":
+                    raise e
+            try:
+                self.manager.delete_deployment(k8s_name=k8s_name)
+            except ApiException as e:
+                if e.reason != "Not Found":
+                    raise e
 
     def environment_usage(self) -> dict:
         return {"max": self.max_concurrent, "in_use": self.active_environments}

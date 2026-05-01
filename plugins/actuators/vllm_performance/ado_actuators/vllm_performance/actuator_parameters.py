@@ -4,6 +4,7 @@
 from typing import Annotated, Any
 
 import pydantic
+from ado_actuators.vllm_performance.deployment_strategy import DeploymentStrategy
 from pydantic import AfterValidator
 
 from orchestrator.core.actuatorconfiguration.config import GenericActuatorParameters
@@ -81,6 +82,20 @@ class VLLMPerformanceTestParameters(GenericActuatorParameters):
         pydantic.Field(
             description="OpenTelemetry traces endpoint URL for vLLM observability"
         ),
+    ] = None
+    deployment_strategy: Annotated[
+        DeploymentStrategy,
+        pydantic.Field(
+            description="Deployment strategy for vLLM environments. Options: 'k8s_deployment' (standard K8s Deployment), 'kserve' (KServe InferenceService)"
+        ),
+    ] = DeploymentStrategy.K8S_DEPLOYMENT
+    serving_runtime_template: Annotated[
+        str | None,
+        pydantic.Field(description="name of ServingRuntime template for KServe mode"),
+    ] = None
+    inference_service_template: Annotated[
+        str | None,
+        pydantic.Field(description="name of InferenceService template for KServe mode"),
     ] = None
 
     @pydantic.model_validator(mode="before")
