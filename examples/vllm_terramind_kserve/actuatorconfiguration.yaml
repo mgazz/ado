@@ -1,0 +1,34 @@
+# Copyright IBM Corporation 2025, 2026
+# SPDX-License-Identifier: MIT
+
+# ActuatorConfiguration for testing Prithvi geospatial model with KServe
+# This configuration enables KServe deployment mode with Prometheus metrics
+actuatorIdentifier: vllm_performance
+metadata:
+  name: terramind-kserve-test
+  description: Configuration for testing Prithvi geospatial models with KServe
+  labels:
+    environment: testing
+    model_type: geospatial
+    deployment_mode: kserve
+parameters:
+  # Kubernetes configuration
+  namespace: cp-testing
+  in_cluster: true
+  image_pull_secret_name: cp-quay-secret
+  # Environment management
+  max_environments: 3
+  developer_mode: true
+  # KServe deployment strategy
+  deployment_strategy: kserve
+  # Optional: Custom KServe templates (uncomment to use custom templates)
+  # serving_runtime_template: "path/to/custom/serving_runtime.yaml"
+  # inference_service_template: "path/to/custom/inference_service.yaml"
+
+  # Observability
+  otel_traces_endpoint: http://jaeger:4317/v1/traces
+  verify_ssl: false
+  # HuggingFace token (set via environment variable or provide directly)
+  # hf_token: "${HF_TOKEN}"
+
+# Made with Bob

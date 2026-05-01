@@ -1,0 +1,86 @@
+# Copyright IBM Corporation 2025, 2026
+# SPDX-License-Identifier: MIT
+
+# DiscoverySpace for testing Prithvi geospatial model with KServe
+# This space explores different configurations for the IBM-NASA Prithvi model
+metadata:
+  name: "Prithvi Geospatial Model Performance with KServe"
+  description: "Exploration of Prithvi geospatial model configurations using KServe deployment"
+  labels:
+    model_type: "geospatial"
+    deployment_mode: "kserve"
+    experiment_type: "performance_testing"
+entitySpace:
+  # Geospatial model - Prithvi
+  - identifier: model
+    propertyDomain:
+      variableType: "CATEGORICAL_VARIABLE_TYPE"
+      values:
+        - "ibm-nasa-geospatial/Prithvi-EO-2.0-300M-TL-Sen1Floods11"
+  # Container image for vLLM
+  - identifier: image
+    propertyDomain:
+      variableType: "CATEGORICAL_VARIABLE_TYPE"
+      values:
+        - "quay.io/dataprep1/data-prep-kit/vllm_image:0.1"
+  # GPU configuration
+  - identifier: n_gpus
+    propertyDomain:
+      variableType: "DISCRETE_VARIABLE_TYPE"
+      lower: 1
+      upper: 1
+  - identifier: gpu_type
+    propertyDomain:
+      variableType: "CATEGORICAL_VARIABLE_TYPE"
+      values:
+        - "NVIDIA-A100-80GB-PCIe"
+        - "NVIDIA-H100-80GB-HBM3"
+  # CPU and memory configuration
+  - identifier: n_cpus
+    propertyDomain:
+      variableType: "DISCRETE_VARIABLE_TYPE"
+      lower: 32
+      upper: 128
+      step: 32
+  - identifier: memory
+    propertyDomain:
+      variableType: "CATEGORICAL_VARIABLE_TYPE"
+      values:
+        - "128Gi"
+        - "256Gi"
+  # vLLM configuration parameters
+  - identifier: max_batch_tokens
+    propertyDomain:
+      variableType: "DISCRETE_VARIABLE_TYPE"
+      lower: 16384
+      upper: 32768
+      step: 16384
+  - identifier: max_num_seq
+    propertyDomain:
+      variableType: "DISCRETE_VARIABLE_TYPE"
+      lower: 256
+      upper: 512
+      step: 256
+  - identifier: gpu_memory_utilization
+    propertyDomain:
+      variableType: "CONTINUOUS_VARIABLE_TYPE"
+      lower: 0.85
+      upper: 0.95
+  # Workload parameters
+  - identifier: request_rate
+    propertyDomain:
+      variableType: "DISCRETE_VARIABLE_TYPE"
+      lower: 8
+      upper: 32
+      step: 8
+  - identifier: num_prompts
+    propertyDomain:
+      variableType: "DISCRETE_VARIABLE_TYPE"
+      lower: 100
+      upper: 500
+      step: 100
+measurementSpace:
+  - actuatorIdentifier: vllm_performance
+    experimentIdentifier: test-geospatial-deployment-v1
+
+# Made with Bob

@@ -1,0 +1,48 @@
+# Copyright IBM Corporation 2025, 2026
+# SPDX-License-Identifier: MIT
+
+# Operation for exploring Prithvi geospatial model performance with KServe
+# Uses random walk operator with sequential grouped sampling
+metadata:
+  name: "Prithvi Geospatial Model Performance Exploration with KServe"
+  description: "Random walk exploration of Prithvi geospatial model configurations using KServe deployment"
+  labels:
+    experiment_type: "performance_testing"
+    model_type: "geospatial"
+    deployment_mode: "kserve"
+# Reference to actuator configuration
+# Use --use-latest actuatorconfiguration when creating the operation, or specify the identifier here
+# actuatorConfigurationIdentifiers: ["actuatorconfiguration-vllm_performance-<id>"]
+
+# Reference to discovery space
+# Use --use-latest space when creating the operation, or specify the identifier here
+# spaces: ["space-<id>-default"]
+operation:
+  module:
+    operatorName: "random_walk"
+    operationType: search
+  parameters:
+    # Sample all entities in the space
+    numberEntities: all
+    # Process one entity at a time
+    batchSize: 1
+    # Allow multiple measurements per entity
+    singleMeasurement: false
+    # Sampler configuration
+    samplerConfig:
+      # Use sequential grouped sampling to reuse deployments
+      mode: 'sequentialgrouped'
+      samplerType: 'generator'
+      # Group by deployment-level properties
+      # A unique combination of these properties creates a new KServe InferenceService
+      grouping:
+        - model
+        - image
+        - memory
+        - max_batch_tokens
+        - max_num_seq
+        - n_gpus
+        - gpu_type
+        - n_cpus
+
+# Made with Bob
