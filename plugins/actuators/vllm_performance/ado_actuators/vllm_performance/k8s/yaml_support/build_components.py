@@ -50,8 +50,13 @@ class ComponentsYaml:
 
         # Making sure the resulting name is not longer than 63 characters as it is
         # the maximum allowed for a name in kubernetes.
+        # Use short UUID (8 chars) to keep total length under 63 chars
+        # Format: vllm-<model_prefix>-<short_uuid>
+        # Max length: 5 (vllm-) + 25 (model) + 1 (-) + 8 (uuid) = 39 chars
+        # This leaves room for KServe suffixes like "-predictor" (10 chars)
+        short_uuid = uuid.uuid4().hex[:8]
         name_prefix = m_parts[-1][: min(len(m_parts[-1]), 25)].rstrip("-")
-        return f"vllm-{name_prefix.lower()}-{uuid.uuid4().hex}".replace(".", "-")
+        return f"vllm-{name_prefix.lower()}-{short_uuid}".replace(".", "-")
 
     @staticmethod
     def _adjust_file_name(f: str) -> Path:

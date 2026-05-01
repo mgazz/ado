@@ -57,6 +57,9 @@ vllm_performance = [
 root = "../../../"
 local_scheme = "node-and-timestamp"
 
+[tool.ruff.lint]
+ignore = ["S101"]  # Allow assert statements in tests
+
 # Required when added as a workspace package
 [tool.uv.sources]
 ado-core = { workspace = true }
