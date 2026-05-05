@@ -79,6 +79,12 @@ entitySpace:
       lower: 100
       upper: 500
       step: 100
+  # Optional: Maximum number of replicas for KServe autoscaling
+  - identifier: max_replicas
+    propertyDomain:
+      variableType: "DISCRETE_VARIABLE_TYPE"
+      lower: 1
+      upper: 3
 measurementSpace:
   - actuatorIdentifier: vllm_performance
     experimentIdentifier: test-geospatial-deployment-v1

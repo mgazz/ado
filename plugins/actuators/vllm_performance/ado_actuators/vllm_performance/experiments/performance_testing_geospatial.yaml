@@ -266,6 +266,9 @@ performance_testing-geospatial-full:
     - property:
         identifier: 'dataset'
       value: 'india_url_in_b64_out'
+    - property:
+        identifier: 'max_replicas'
+      value: 1
   # measurements
   targetProperties:
     - identifier: "duration"
@@ -463,6 +466,9 @@ performance_testing-geospatial-full-custom-dataset:
     - property:
         identifier: 'io_processor_plugin'
       value: "terratorch_segmentation"
+    - property:
+        identifier: 'max_replicas'
+      value: 1
   # measurements
   targetProperties:
     - identifier: "duration"
@@ -813,6 +819,9 @@ performance_testing-geospatial-full-guidellm:
     - property:
         identifier: 'dataset'
       value: 'india_url_in_b64_out'
+    - property:
+        identifier: 'max_replicas'
+      value: 1
   targetProperties:
     - identifier: "duration"
     - identifier: "completed"
@@ -1010,6 +1019,9 @@ performance_testing-geospatial-guidellm-deployment-custom-dataset:
     - property:
         identifier: 'io_processor_plugin'
       value: "terratorch_segmentation"
+    - property:
+        identifier: 'max_replicas'
+      value: 1
   targetProperties:
     - identifier: "duration"
     - identifier: "completed"
