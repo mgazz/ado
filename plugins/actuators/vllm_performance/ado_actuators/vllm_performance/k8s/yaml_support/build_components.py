@@ -578,6 +578,9 @@ class ComponentsYaml:
             "requiredDuringSchedulingIgnoredDuringExecution"
         ][0]["labelSelector"]["matchExpressions"][0]["values"] = [k8s_name]
 
+        logger.debug(json.dumps(inference_service_yaml, indent=2))
+        return inference_service_yaml
+
     @staticmethod
     def service_monitor_yaml(
         k8s_name: str,
