@@ -495,6 +495,7 @@ class ComponentsManager:
         gpu_type: str = "NVIDIA-A100-80GB-PCIe",
         node_selector: dict[str, str] | None = None,
         template: str | None = None,
+        max_replicas: int = 1,
     ) -> None:
         """
         Create KServe InferenceService
@@ -502,6 +503,7 @@ class ComponentsManager:
         :param gpu_type: gpu type, for example NVIDIA-A100-80GB-PCIe, Tesla-V100-PCIE-16GB, etc.
         :param node_selector: optional node selector
         :param template: template for InferenceService yaml
+        :param max_replicas: maximum number of replicas for autoscaling (default: 1)
         :return:
         """
         if node_selector is None:
@@ -513,6 +515,7 @@ class ComponentsManager:
             node_selector=node_selector,
             template=template,
             namespace=self.namespace,
+            max_replicas=max_replicas,
         )
         logger.debug(json.dumps(inference_service_yaml, indent=2))
 

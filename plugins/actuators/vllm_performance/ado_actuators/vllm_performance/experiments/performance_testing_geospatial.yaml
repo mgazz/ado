@@ -125,6 +125,13 @@ performance_testing-geospatial-full:
       propertyDomain:
         variableType: "CATEGORICAL_VARIABLE_TYPE"
         values: ['india_url_in_b64_out', 'valencia_url_in_b64_out', 'terramind_flood_url_in_b64_out']
+    - identifier: 'max_replicas'
+      metadata:
+        description: "(deployment) Maximum number of replicas for KServe autoscaling (only applies to KServe deployment strategy)"
+      propertyDomain:
+        variableType: 'DISCRETE_VARIABLE_TYPE'
+        domainRange: [1, 10]
+        interval: 1
     - identifier: image
       metadata:
         description: "(deployment) Docker image to use to create vllm deployments"
@@ -317,6 +324,13 @@ performance_testing-geospatial-full-custom-dataset:
       propertyDomain:
         variableType: 'DISCRETE_VARIABLE_TYPE'
         domainRange: [0, 10]
+        interval: 1
+    - identifier: 'max_replicas'
+      metadata:
+        description: "(deployment) Maximum number of replicas for KServe autoscaling (only applies to KServe deployment strategy)"
+      propertyDomain:
+        variableType: 'DISCRETE_VARIABLE_TYPE'
+        domainRange: [1, 10]
         interval: 1
     - identifier: image
       metadata:
@@ -658,6 +672,13 @@ performance_testing-geospatial-full-guidellm:
       propertyDomain:
         variableType: "CATEGORICAL_VARIABLE_TYPE"
         values: ['india_url_in_b64_out', 'valencia_url_in_b64_out']
+    - identifier: 'max_replicas'
+      metadata:
+        description: "(deployment) Maximum number of replicas for KServe autoscaling (only applies to KServe deployment strategy)"
+      propertyDomain:
+        variableType: 'DISCRETE_VARIABLE_TYPE'
+        domainRange: [1, 10]
+        interval: 1
     - identifier: image
       metadata:
         description: "(deployment) Docker image to use to create vllm deployments"
@@ -849,6 +870,13 @@ performance_testing-geospatial-guidellm-deployment-custom-dataset:
       propertyDomain:
         variableType: 'DISCRETE_VARIABLE_TYPE'
         values: [1.0]
+    - identifier: 'max_replicas'
+      metadata:
+        description: "(deployment) Maximum number of replicas for KServe autoscaling (only applies to KServe deployment strategy)"
+      propertyDomain:
+        variableType: 'DISCRETE_VARIABLE_TYPE'
+        domainRange: [1, 10]
+        interval: 1
     - identifier: image
       metadata:
         description: "(deployment) Docker image to use to create vllm deployments"

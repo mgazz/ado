@@ -125,6 +125,13 @@ test-deployment-v1:
       propertyDomain:
         variableType: 'CATEGORICAL_VARIABLE_TYPE'
         values: ['random']
+    - identifier: 'max_replicas'
+      metadata:
+        description: "(deployment) Maximum number of replicas for KServe autoscaling (only applies to KServe deployment strategy)"
+      propertyDomain:
+        variableType: 'DISCRETE_VARIABLE_TYPE'
+        domainRange: [1, 10]
+        interval: 1
   defaultParameterization:
     - property:
         identifier: 'image'
@@ -458,6 +465,13 @@ test-deployment-guidellm-v1:
       propertyDomain:
         variableType: 'CATEGORICAL_VARIABLE_TYPE'
         values: ['random']
+    - identifier: 'max_replicas'
+      metadata:
+        description: "(deployment) Maximum number of replicas for KServe autoscaling (only applies to KServe deployment strategy)"
+      propertyDomain:
+        variableType: 'DISCRETE_VARIABLE_TYPE'
+        domainRange: [1, 10]
+        interval: 1
   defaultParameterization:
     - property:
         identifier: 'image'

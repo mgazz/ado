@@ -243,6 +243,35 @@ These annotations allow Prometheus to automatically discover and scrape metrics
 from the vLLM inference service, providing observability into model serving
 performance.
 
+### Autoscaling with max_replicas
+
+When using KServe deployment mode, you can control the maximum number of replicas
+for autoscaling by including `max_replicas` as an optional property in your
+entity space:
+
+```yaml
+entitySpace:
+  # ... other properties ...
+  
+  # Optional: Maximum number of replicas for KServe autoscaling
+  - identifier: max_replicas
+    domain:
+      type: discrete
+      lower: 1
+      upper: 4
+```
+
+**Key Points:**
+
+- `max_replicas` is an **optional** entity property (not an actuator parameter)
+- Only applies when `deployment_strategy: kserve` is configured
+- Default value is 1 if not specified
+- Allows exploration of different autoscaling configurations in your discovery space
+- Ignored when using `k8s_deployment` strategy
+
+This enables you to systematically explore how different replica configurations
+affect performance and resource utilization in your KServe deployments.
+
 ### Benefits of KServe Mode
 
 - **Native KServe Integration**: Leverage KServe's standardized serving interface

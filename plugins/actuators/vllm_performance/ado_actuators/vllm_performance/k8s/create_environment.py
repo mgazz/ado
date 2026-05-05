@@ -43,6 +43,7 @@ def create_kserve_environment(
     otel_traces_endpoint: str | None = None,
     check_interval: int = 5,
     timeout: int = 1200,
+    max_replicas: int = 1,
 ) -> None:
     """
     Create KServe InferenceService environment
@@ -73,6 +74,7 @@ def create_kserve_environment(
     :param otel_traces_endpoint: OpenTelemetry traces endpoint URL
     :param check_interval: wait interval in seconds
     :param timeout: timeout in seconds
+    :param max_replicas: maximum number of replicas for autoscaling (default: 1)
     :return:
     """
     if node_selector is None:
@@ -134,6 +136,7 @@ def create_kserve_environment(
         gpu_type=gpu_type,
         node_selector=node_selector,
         template=inference_service_template,
+        max_replicas=max_replicas,
     )
     logger.debug("InferenceService created")
 
@@ -177,6 +180,7 @@ def create_test_environment(
     deployment_strategy: DeploymentStrategy = DeploymentStrategy.K8S_DEPLOYMENT,
     serving_runtime_template: None | str = None,
     inference_service_template: None | str = None,
+    max_replicas: int = 1,
 ) -> None:
     """
     Create test environment based on deployment strategy
@@ -210,6 +214,7 @@ def create_test_environment(
     :param deployment_strategy: deployment strategy (K8S_DEPLOYMENT or KSERVE)
     :param serving_runtime_template: ServingRuntime template (for KSERVE)
     :param inference_service_template: InferenceService template (for KSERVE)
+    :param max_replicas: maximum number of replicas for autoscaling (default: 1, only for KSERVE)
     :return:
     """
     logger.info(f"Deploying teste environment with strategy: {deployment_strategy}")
@@ -242,6 +247,7 @@ def create_test_environment(
             otel_traces_endpoint=otel_traces_endpoint,
             check_interval=check_interval,
             timeout=timeout,
+            max_replicas=max_replicas,
         )
         return
     if deployment_strategy != DeploymentStrategy.K8S_DEPLOYMENT:

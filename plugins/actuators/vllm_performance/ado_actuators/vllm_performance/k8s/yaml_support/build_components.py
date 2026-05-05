@@ -495,6 +495,7 @@ class ComponentsYaml:
         node_selector: dict[str, str] | None = None,
         template: str | None = None,
         namespace: str = "vllm-testing",
+        max_replicas: int = 1,
     ) -> dict[str, Any]:
         """
         Generate InferenceService yaml for KServe
@@ -503,6 +504,7 @@ class ComponentsYaml:
         :param node_selector: optional node selector
         :param template: template for InferenceService yaml
         :param namespace: Kubernetes namespace
+        :param max_replicas: maximum number of replicas for autoscaling (default: 1)
         :return: InferenceService yaml
         """
         if node_selector is None:
@@ -541,6 +543,9 @@ class ComponentsYaml:
 
         # Set runtime reference (must match ServingRuntime name)
         predictor["runtime"] = k8s_name
+
+        # Set max replicas for autoscaling
+        predictor["maxReplicas"] = max_replicas
 
         # Update node selector
         predictor["nodeSelector"] = {"nvidia.com/gpu.product": gpu_type}

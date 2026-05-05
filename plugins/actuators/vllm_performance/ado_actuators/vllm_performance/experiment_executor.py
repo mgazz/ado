@@ -223,6 +223,7 @@ def _create_environment(
                         deployment_strategy=actuator.deployment_strategy,
                         serving_runtime_template=actuator.serving_runtime_template,
                         inference_service_template=actuator.inference_service_template,
+                        max_replicas=int(values.get("max_replicas", 1)),
                     )
                     # Update manager
                     env_manager.done_creating.remote(identifier=env.k8s_name)
