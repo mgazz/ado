@@ -19,6 +19,7 @@ DEFAULT_DEPLOYMENT_TEMPLATE = "deployment.yaml"
 DEFAULT_SERVICE_TEMPLATE = "service.yaml"
 DEFAULT_SERVING_RUNTIME_TEMPLATE = "serving_runtime.yaml"
 DEFAULT_INFERENCE_SERVICE_TEMPLATE = "inference_service.yaml"
+DEFAULT_SERVICE_MONITOR_TEMPLATE = "service_monitor.yaml"
 
 
 class VLLMDtype(Enum):
@@ -577,8 +578,52 @@ class ComponentsYaml:
             "requiredDuringSchedulingIgnoredDuringExecution"
         ][0]["labelSelector"]["matchExpressions"][0]["values"] = [k8s_name]
 
-        logger.debug(json.dumps(inference_service_yaml, indent=2))
-        return inference_service_yaml
+    @staticmethod
+    def service_monitor_yaml(
+        k8s_name: str,
+        namespace: str = "vllm-testing",
+        template: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Generate ServiceMonitor yaml for OpenShift Prometheus monitoring
+        :param k8s_name: ServiceMonitor name (must match InferenceService name)
+        :param namespace: Kubernetes namespace
+        :param template: template for ServiceMonitor yaml
+        :return: ServiceMonitor yaml
+        """
+        # read template
+        if template is None:
+            logger.debug("Using default ServiceMonitor template")
+            template_file = ComponentsYaml._adjust_file_name(
+                DEFAULT_SERVICE_MONITOR_TEMPLATE
+            )
+        else:
+            template_file = ComponentsYaml._get_full_path_from_cwd(template)
+        logger.debug(
+            f"Creating ServiceMonitor from template file: {template_file.absolute()}"
+        )
+
+        try:
+            template_data = template_file.read_text()
+            service_monitor_yaml = yaml.safe_load(template_data)
+        except Exception as exception:
+            error_string = f"Exception reading ServiceMonitor yaml template {exception}"
+            logger.error(error_string)
+            raise ValueError(error_string) from exception
+
+        # Update metadata
+        metadata = service_monitor_yaml["metadata"]
+        metadata["name"] = k8s_name
+        metadata["namespace"] = namespace
+        metadata["labels"]["app"] = k8s_name
+
+        # Update spec selector to match InferenceService labels
+        service_monitor_yaml["spec"]["selector"]["matchLabels"][
+            "serving.kserve.io/inferenceservice"
+        ] = k8s_name
+
+        logger.debug(json.dumps(service_monitor_yaml, indent=2))
+        return service_monitor_yaml
 
 
 if __name__ == "__main__":

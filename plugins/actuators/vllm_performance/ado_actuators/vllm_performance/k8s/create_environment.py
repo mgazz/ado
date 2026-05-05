@@ -25,6 +25,7 @@ def create_kserve_environment(
     image_pull_secret_name: str = "",
     serving_runtime_template: None | str = None,
     inference_service_template: None | str = None,
+    service_monitor_template: None | str = None,
     n_gpus: int = 1,
     gpu_type: str = "NVIDIA-A100-80GB-PCIe",
     node_selector: dict[str, str] | None = None,
@@ -44,6 +45,7 @@ def create_kserve_environment(
     check_interval: int = 5,
     timeout: int = 1200,
     max_replicas: int = 1,
+    enable_service_monitor: bool = True,
 ) -> None:
     """
     Create KServe InferenceService environment
@@ -56,6 +58,7 @@ def create_kserve_environment(
     :param image_pull_secret_name: name of the image pull secret
     :param serving_runtime_template: ServingRuntime template
     :param inference_service_template: InferenceService template
+    :param service_monitor_template: ServiceMonitor template
     :param n_gpus: number of GPUs
     :param gpu_type: type of the GPU to use
     :param node_selector: optional node selector
@@ -75,6 +78,7 @@ def create_kserve_environment(
     :param check_interval: wait interval in seconds
     :param timeout: timeout in seconds
     :param max_replicas: maximum number of replicas for autoscaling (default: 1)
+    :param enable_service_monitor: flag to enable ServiceMonitor creation for Prometheus (default: True)
     :return:
     """
     if node_selector is None:
@@ -139,6 +143,14 @@ def create_kserve_environment(
         max_replicas=max_replicas,
     )
     logger.debug("InferenceService created")
+
+    # Create ServiceMonitor for Prometheus metrics (OpenShift)
+    if enable_service_monitor:
+        c_manager.create_service_monitor(
+            k8s_name=k8s_name,
+            template=service_monitor_template,
+        )
+        logger.debug("ServiceMonitor created")
 
     # Wait for InferenceService to be ready
     c_manager.wait_inference_service_ready(

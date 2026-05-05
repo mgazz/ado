@@ -658,6 +658,78 @@ class ComponentsManager:
             if self._inference_service_ready(k8s_name=k8s_name):
                 return
         logger.error("Timed out waiting for InferenceService to get ready")
+
+    def create_service_monitor(
+        self,
+        k8s_name: str,
+        template: str | None = None,
+    ) -> None:
+        """
+        Create ServiceMonitor for Prometheus metrics scraping (OpenShift)
+        :param k8s_name: ServiceMonitor name (must match InferenceService name)
+        :param template: template for ServiceMonitor yaml
+        :return:
+        """
+        service_monitor_yaml = ComponentsYaml.service_monitor_yaml(
+            k8s_name=k8s_name,
+            namespace=self.namespace,
+            template=template,
+        )
+        logger.debug(json.dumps(service_monitor_yaml, indent=2))
+
+        try:
+            self.kserve_client.create_namespaced_custom_object(
+                group="monitoring.coreos.com",
+                version="v1",
+                namespace=self.namespace,
+                plural="servicemonitors",
+                body=service_monitor_yaml,
+            )
+        except ApiException as e:
+            logger.error(f"error creating service monitor {e}")
+            raise
+
+    def check_service_monitor_exists(self, k8s_name: str) -> bool:
+        """
+        Check if ServiceMonitor exists
+        :param k8s_name: ServiceMonitor name
+        :return: boolean
+        """
+        try:
+            monitors = self.kserve_client.list_namespaced_custom_object(
+                group="monitoring.coreos.com",
+                version="v1",
+                namespace=self.namespace,
+                plural="servicemonitors",
+            )
+        except ApiException as e:
+            logger.error(f"error getting service monitor list {e}")
+            return False
+        return any(
+            monitor["metadata"]["name"] == k8s_name for monitor in monitors["items"]
+        )
+
+    def delete_service_monitor(self, k8s_name: str) -> None:
+        """
+        Delete ServiceMonitor
+        :param k8s_name: ServiceMonitor name
+        :return:
+        """
+        try:
+            self.kserve_client.delete_namespaced_custom_object(
+                group="monitoring.coreos.com",
+                version="v1",
+                namespace=self.namespace,
+                plural="servicemonitors",
+                name=k8s_name,
+                body=client.V1DeleteOptions(
+                    propagation_policy="Foreground", grace_period_seconds=5
+                ),
+            )
+        except ApiException as e:
+            logger.error(f"error deleting service monitor {e}")
+            raise
+
         raise Exception("Timed out waiting for InferenceService to get ready")
 
 
