@@ -328,6 +328,13 @@ class EnvironmentManager:
         """
         return self.otel_traces_endpoint
 
+    def get_deployment_strategy(self) -> DeploymentStrategy:
+        """
+        Get the deployment strategy
+        :return: DeploymentStrategy enum value
+        """
+        return self.deployment_strategy
+
     def done_using(self, identifier: str, reclaim_on_completion: bool = False) -> None:
         """
         Report test completion

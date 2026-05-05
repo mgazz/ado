@@ -278,6 +278,7 @@ def _connect_to_vllm_server(
     k8s_name: str,
     actuator_parameters: VLLMPerformanceTestParameters,
     port: int,
+    env_manager: ActorHandle,
 ) -> tuple[str, subprocess.Popen | None]:
     """Returns the URL of the vLLM inference server
 
@@ -288,6 +289,8 @@ def _connect_to_vllm_server(
         k8s_name: The name of the vLLM service
         actuator_parameters: VLLMPerformanceTestParameters instance containing
             namespace and test location (in_cluster or not) information
+        port: Port number for port-forwarding
+        env_manager: Environment manager actor to get deployment strategy
 
     Returns:
         A tuple containing
@@ -298,6 +301,7 @@ def _connect_to_vllm_server(
     Raise:
         K8ConnectionError if a port-forward could not be created
     """
+    from ado_actuators.vllm_performance.deployment_strategy import DeploymentStrategy
 
     # create environment
     if not actuator_parameters.in_cluster:
@@ -309,10 +313,16 @@ def _connect_to_vllm_server(
         )
 
     if actuator_parameters.in_cluster:
+        # Get deployment strategy from env_manager
+        deployment_strategy = ray.get(env_manager.get_deployment_strategy.remote())
+
         # we are running in cluster, connect to service directly
-        base_url = (
-            f"http://{k8s_name}.{actuator_parameters.namespace}.svc.cluster.local:80"
-        )
+        # For KServe, append -predictor to the service name
+        service_name = k8s_name
+        if deployment_strategy == DeploymentStrategy.KSERVE:
+            service_name = f"{k8s_name}-predictor"
+
+        base_url = f"http://{service_name}.{actuator_parameters.namespace}.svc.cluster.local:80"
         pf = None
     else:
         # we are running locally. need to do port-forward and connect to the local one
@@ -406,7 +416,7 @@ def run_resource_and_workload_experiment(
             # but could not be created
             current_port += 1
             base_url, port_forward = _connect_to_vllm_server(
-                k8s_name, actuator_parameters, current_port
+                k8s_name, actuator_parameters, current_port, env_manager
             )
 
             logger.info(f"Will use vllm server at {base_url}")
