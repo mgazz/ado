@@ -180,6 +180,13 @@ class EnvironmentManager:
                 if e.reason != "Not Found":
                     raise e
 
+        # Delete ServiceMonitor (common to both deployment strategies)
+        try:
+            self.manager.delete_service_monitor(k8s_name=k8s_name)
+        except ApiException as e:
+            if e.reason != "Not Found":
+                raise e
+
     def environment_usage(self) -> dict:
         return {"max": self.max_concurrent, "in_use": self.active_environments}
 
