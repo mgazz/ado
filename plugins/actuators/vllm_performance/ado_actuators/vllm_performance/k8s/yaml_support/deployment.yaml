@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: vllm
     app.kubernetes.io/instance: vllm-testing
 spec:
-  replicas: {? {replicas: ''} : ''}
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: vllm
