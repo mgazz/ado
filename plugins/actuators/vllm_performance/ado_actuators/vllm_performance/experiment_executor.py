@@ -455,6 +455,7 @@ def run_resource_and_workload_experiment(
                 "test-geospatial-deployment-v1",
                 "test-geospatial-deployment-custom-dataset-v1",
                 "test-geospatial-endpoint-custom-dataset-v1",
+                "test-geospatial-deployment-scalability-custom-dataset-v1",
             ]:
                 logger.info("Using geospatial benchmark for deployment")
                 result = execute_geospatial_benchmark(
