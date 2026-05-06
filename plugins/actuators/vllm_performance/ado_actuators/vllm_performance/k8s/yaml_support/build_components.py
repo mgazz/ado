@@ -189,8 +189,6 @@ class ComponentsYaml:
             f"{cpu_offload}",
             "--max-num-seq",
             f"{max_num_seq}",
-            "--tensor-parallel-size",
-            f"{n_gpus}",
             "--dtype",
             dtype.value,
         ]
@@ -206,6 +204,10 @@ class ComponentsYaml:
         if otel_traces_endpoint is not None:
             vllm_serve_args.append("--otlp-traces-endpoint")
             vllm_serve_args.append(otel_traces_endpoint)
+
+        # Add renderer and API server configuration
+        vllm_serve_args.extend(["--renderer-num-workers", "32"])
+        vllm_serve_args.extend(["--api-server-count", "32"])
 
         # container
         container = spec["containers"][0]
@@ -413,8 +415,6 @@ class ComponentsYaml:
             f"{cpu_offload}",
             "--max-num-seq",
             f"{max_num_seq}",
-            "--tensor-parallel-size",
-            f"{n_gpus}",
             "--dtype",
             dtype.value,
         ]
@@ -430,6 +430,10 @@ class ComponentsYaml:
         if otel_traces_endpoint is not None:
             vllm_serve_args.append("--otlp-traces-endpoint")
             vllm_serve_args.append(otel_traces_endpoint)
+
+        # Add renderer and API server configuration
+        vllm_serve_args.extend(["--renderer-num-workers", "32"])
+        vllm_serve_args.extend(["--api-server-count", "32"])
 
         # Update spec
         spec = serving_runtime_yaml["spec"]
