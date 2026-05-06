@@ -267,6 +267,7 @@ class ComponentsManager:
         skip_tokenizer_init: bool = False,
         io_processor_plugin: str | None = None,
         otel_traces_endpoint: str | None = None,
+        replicas: int = 1,
     ) -> None:
         """
         create deployment for model
@@ -319,6 +320,7 @@ class ComponentsManager:
             io_processor_plugin=io_processor_plugin,
             enforce_eager=enforce_eager,
             otel_traces_endpoint=otel_traces_endpoint,
+            replicas=replicas,
         )
         logger.debug(json.dumps(deployment_yaml, indent=2))
 
