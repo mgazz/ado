@@ -100,6 +100,8 @@ class ComponentsYaml:
         skip_tokenizer_init: bool = False,
         io_processor_plugin: str | None = None,
         otel_traces_endpoint: str | None = None,
+        replicas: int = 1,
+        renderer_num_workers: int | None = None,
     ) -> dict[str, Any]:
         """
         Generate deployment yaml
@@ -123,6 +125,8 @@ class ComponentsYaml:
         :param enforce_eager: flag to enforce using Pytorch eager mode
         :param skip_tokenizer_init: flag to skip tokenizer initialization in vLLM
         :param io_processor_plugin: name of the IO processor plugin to be used by vLLM
+        :param otel_traces_endpoint: OpenTelemetry traces endpoint URL
+        :param replicas: number of replicas for the deployment
         :return:
         """
         if node_selector is None:
@@ -155,6 +159,8 @@ class ComponentsYaml:
 
         # update spec
         spec = deployment_yaml["spec"]
+        # Set replicas
+        spec["replicas"] = replicas
         # selector
         spec["selector"]["matchLabels"]["app.kubernetes.io/instance"] = k8s_name
 
@@ -205,9 +211,12 @@ class ComponentsYaml:
             vllm_serve_args.append("--otlp-traces-endpoint")
             vllm_serve_args.append(otel_traces_endpoint)
 
-        # Add renderer and API server configuration
-        vllm_serve_args.extend(["--renderer-num-workers", "32"])
-        vllm_serve_args.extend(["--mm-processor-cache-gb", "0"])
+        # Add renderer and API server configuration (only if renderer_num_workers is specified)
+        if renderer_num_workers is not None:
+            vllm_serve_args.extend(
+                ["--renderer-num-workers", str(renderer_num_workers)]
+            )
+            vllm_serve_args.extend(["--mm-processor-cache-gb", "0"])
 
         # container
         container = spec["containers"][0]

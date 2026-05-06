@@ -287,8 +287,6 @@ def execute_geospatial_benchmark(
             "--dataset-path": f"{dataset_path.resolve()}",
             "--endpoint": "/pooling",
             "--skip-tokenizer-init": None,
-            "--renderer-num-workers": 32,
-            "--api-server-count": 32,
         },
     )
 

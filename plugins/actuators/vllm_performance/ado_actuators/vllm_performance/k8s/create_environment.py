@@ -315,6 +315,7 @@ def create_test_environment(
         skip_tokenizer_init=skip_tokenizer_init,
         io_processor_plugin=io_processor_plugin,
         otel_traces_endpoint=otel_traces_endpoint,
+        replicas=max_replicas,
     )
     logger.debug("deployment created")
     c_manager.wait_deployment_ready(
