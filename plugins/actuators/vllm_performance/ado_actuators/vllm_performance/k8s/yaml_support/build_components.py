@@ -208,6 +208,7 @@ class ComponentsYaml:
         # Add renderer and API server configuration
         vllm_serve_args.extend(["--renderer-num-workers", "32"])
         vllm_serve_args.extend(["--api-server-count", "32"])
+        vllm_serve_args.extend(["--mm-processor-cache-gb", "0"])
 
         # container
         container = spec["containers"][0]
@@ -434,6 +435,7 @@ class ComponentsYaml:
         # Add renderer and API server configuration
         vllm_serve_args.extend(["--renderer-num-workers", "32"])
         vllm_serve_args.extend(["--api-server-count", "32"])
+        vllm_serve_args.extend(["--mm-processor-cache-gb", "0"])
 
         # Update spec
         spec = serving_runtime_yaml["spec"]
