@@ -211,6 +211,7 @@ class ComponentsYaml:
             vllm_serve_args.append("--otlp-traces-endpoint")
             vllm_serve_args.append(otel_traces_endpoint)
 
+        logger.debug(f"renderer_num_workers: {renderer_num_workers}")
         # Add renderer and API server configuration (only if renderer_num_workers is specified)
         if renderer_num_workers is not None:
             vllm_serve_args.extend(

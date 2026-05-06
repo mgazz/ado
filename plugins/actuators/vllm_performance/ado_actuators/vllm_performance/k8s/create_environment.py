@@ -46,6 +46,7 @@ def create_kserve_environment(
     timeout: int = 1200,
     max_replicas: int = 1,
     enable_service_monitor: bool = True,
+    renderer_num_workers: int | None = None,
 ) -> None:
     """
     Create KServe InferenceService environment
@@ -79,6 +80,7 @@ def create_kserve_environment(
     :param timeout: timeout in seconds
     :param max_replicas: maximum number of replicas for autoscaling (default: 1)
     :param enable_service_monitor: flag to enable ServiceMonitor creation for Prometheus (default: True)
+    :param renderer_num_workers: number of renderer workers for processing
     :return:
     """
     if node_selector is None:
@@ -193,6 +195,7 @@ def create_test_environment(
     serving_runtime_template: None | str = None,
     inference_service_template: None | str = None,
     max_replicas: int = 1,
+    renderer_num_workers: int | None = None,
 ) -> None:
     """
     Create test environment based on deployment strategy
@@ -227,6 +230,7 @@ def create_test_environment(
     :param serving_runtime_template: ServingRuntime template (for KSERVE)
     :param inference_service_template: InferenceService template (for KSERVE)
     :param max_replicas: maximum number of replicas for autoscaling (default: 1, only for KSERVE)
+    :param renderer_num_workers: number of renderer workers for processing
     :return:
     """
     logger.info(f"Deploying teste environment with strategy: {deployment_strategy}")
@@ -260,6 +264,7 @@ def create_test_environment(
             check_interval=check_interval,
             timeout=timeout,
             max_replicas=max_replicas,
+            renderer_num_workers=renderer_num_workers,
         )
         return
     if deployment_strategy != DeploymentStrategy.K8S_DEPLOYMENT:
@@ -316,6 +321,7 @@ def create_test_environment(
         io_processor_plugin=io_processor_plugin,
         otel_traces_endpoint=otel_traces_endpoint,
         replicas=max_replicas,
+        renderer_num_workers=renderer_num_workers,
     )
     logger.debug("deployment created")
     c_manager.wait_deployment_ready(

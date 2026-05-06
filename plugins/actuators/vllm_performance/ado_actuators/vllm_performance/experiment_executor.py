@@ -224,6 +224,7 @@ def _create_environment(
                         serving_runtime_template=actuator.serving_runtime_template,
                         inference_service_template=actuator.inference_service_template,
                         max_replicas=int(values.get("max_replicas", 1)),
+                        renderer_num_workers=int(values["renderer_num_workers"]) if values.get("renderer_num_workers") is not None else None,
                     )
                     # Update manager
                     env_manager.done_creating.remote(identifier=env.k8s_name)

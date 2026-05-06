@@ -1242,6 +1242,13 @@ performance_testing-geospatial-scalability-custom-dataset:
       propertyDomain:
         variableType: "OPEN_CATEGORICAL_VARIABLE_TYPE"
         values: ["terratorch_segmentation"]
+    - identifier: 'renderer_num_workers'
+      metadata:
+        description: "(deployment) Number of renderer workers for processing"
+      propertyDomain:
+        variableType: 'DISCRETE_VARIABLE_TYPE'
+        domainRange: [1, 128]
+        interval: 1
   defaultParameterization:
     - property:
         identifier: 'image'
@@ -1291,6 +1298,9 @@ performance_testing-geospatial-scalability-custom-dataset:
     - property:
         identifier: 'io_processor_plugin'
       value: "terratorch_segmentation"
+    - property:
+        identifier: 'renderer_num_workers'
+      value: 32
     - property:
         identifier: 'max_replicas'
       value: 2
