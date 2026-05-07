@@ -309,6 +309,16 @@ class EnvironmentManager:
             k8s_name=identifier, model=env.model, error=True
         )
 
+    def cleanup_completed_deployment(self, identifier: str) -> None:
+        """
+        Delete deployment resources and release the slot after a successful or
+        failed benchmark execution.
+        :param identifier: environment identifier
+        :return: None
+        """
+        self._delete_environment_k8s_resources(k8s_name=identifier)
+        self.done_using(identifier=identifier, reclaim_on_completion=True)
+
     def get_matching_free_environment(self, configuration: str) -> Environment | None:
         """
         Find a deployment matching a deployment configuration

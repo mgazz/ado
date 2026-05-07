@@ -67,7 +67,9 @@ def _build_entity_env(values: dict[str, str]) -> str:
         * gpu memory utilization
         * data type
         * cpu offload
-    Build entity based environment parameters
+        * max replicas
+        * tokenizer/runtime toggles that affect the deployment shape
+    Build entity based environment parameters.
     :param values: experiment values
     :return: definition
     """
@@ -83,8 +85,13 @@ def _build_entity_env(values: dict[str, str]) -> str:
         "dtype": values.get("dtype"),
         "cpu_offload": values.get("cpu_offload"),
         "max_num_seq": values.get("max_num_seq"),
+        "max_replicas": values.get("max_replicas"),
+        "skip_tokenizer_init": values.get("skip_tokenizer_init"),
+        "enforce_eager": values.get("enforce_eager"),
+        "io_processor_plugin": values.get("io_processor_plugin"),
+        "renderer_num_workers": values.get("renderer_num_workers"),
     }
-    return json.dumps(env_values)
+    return json.dumps(env_values, sort_keys=True)
 
 
 def _create_environment(
@@ -224,7 +231,11 @@ def _create_environment(
                         serving_runtime_template=actuator.serving_runtime_template,
                         inference_service_template=actuator.inference_service_template,
                         max_replicas=int(values.get("max_replicas", 1)),
-                        renderer_num_workers=int(values["renderer_num_workers"]) if values.get("renderer_num_workers") is not None else None,
+                        renderer_num_workers=(
+                            int(values["renderer_num_workers"])
+                            if values.get("renderer_num_workers") is not None
+                            else None
+                        ),
                     )
                     # Update manager
                     env_manager.done_creating.remote(identifier=env.k8s_name)
@@ -399,7 +410,9 @@ def run_resource_and_workload_experiment(
     for entity in request.entities:
         port_forward = None
         definition = None
+        k8s_name = None
         started_benchmarking = False
+        cleanup_required = False
         try:
             values = experiment.propertyValuesFromEntity(entity=entity)
 
@@ -413,6 +426,7 @@ def run_resource_and_workload_experiment(
                 env_manager=env_manager,
                 request_id=request.requestid,
             )
+            cleanup_required = True
 
             # Will raise an K8sConnectionError if a port-forward was required
             # but could not be created
@@ -566,8 +580,10 @@ def run_resource_and_workload_experiment(
                 )
             if port_forward is not None:
                 port_forward.kill()
-            if definition is not None:
-                env_manager.done_using.remote(identifier=k8s_name)
+            if cleanup_required and k8s_name is not None:
+                ray.get(
+                    env_manager.cleanup_completed_deployment.remote(identifier=k8s_name)
+                )
 
     # For multi entity experiments if ONE entity had ValidResults the status must be SUCCESS
     if len(measurements) > 0:
