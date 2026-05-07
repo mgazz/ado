@@ -442,19 +442,23 @@ def run_resource_and_workload_experiment(
             # when creating the vLLM deployment
             benchmark_parameters.endpoint = base_url
 
-            # Check if this is a scalability experiment and scale RPS accordingly
+            # Check if this is a scalability experiment and scale the workload accordingly
             if experiment.identifier in [
                 "test-geospatial-deployment-scalability-custom-dataset-v1",
             ]:
                 max_replicas = int(values.get("max_replicas", 1))
                 original_rps = benchmark_parameters.request_rate
+                original_num_prompts = benchmark_parameters.num_prompts
                 scaled_rps = original_rps * max_replicas
+                scaled_num_prompts = original_num_prompts * max_replicas
 
                 logger.info(
                     f"Scalability experiment detected: scaling RPS from {original_rps} to {scaled_rps} "
-                    f"(base RPS × {max_replicas} replicas)"
+                    f"and num_prompts from {original_num_prompts} to {scaled_num_prompts} "
+                    f"(base workload × {max_replicas} replicas)"
                 )
                 benchmark_parameters.request_rate = scaled_rps
+                benchmark_parameters.num_prompts = scaled_num_prompts
 
             started_benchmarking = True
             console.put.remote(
