@@ -6,6 +6,8 @@
 import json
 from typing import Any, ClassVar
 
+from ado_actuators.vllm_performance.version_utils import VLLMVersionChecker
+
 
 class CacheKeyBuilder:
     """Build cache keys for vLLM performance measurements.
@@ -28,6 +30,8 @@ class CacheKeyBuilder:
         "dtype",
         "cpu_offload",
         "max_num_seq",
+        "threadpool",
+        "renderer_num_workers",
     ]
 
     BENCHMARK_PARAMS: ClassVar[list[str]] = [
@@ -55,6 +59,21 @@ class CacheKeyBuilder:
         else:
             image_str = image_value
 
+        # Normalize threadpool properties based on vLLM version
+        threadpool_requested = int(values.get("threadpool", 1))
+        renderer_num_workers_requested = int(values.get("renderer_num_workers", 32))
+
+        enable_threadpool = VLLMVersionChecker.supports_threadpool(
+            image_value if image_value is not None else "", threadpool_requested
+        )
+
+        if enable_threadpool:
+            threadpool_value = 1
+            renderer_num_workers_value = renderer_num_workers_requested
+        else:
+            threadpool_value = 0
+            renderer_num_workers_value = 0
+
         return {
             "model": values.get("model"),
             "image": image_str,
@@ -67,6 +86,8 @@ class CacheKeyBuilder:
             "dtype": values.get("dtype"),
             "cpu_offload": values.get("cpu_offload"),
             "max_num_seq": values.get("max_num_seq"),
+            "threadpool": threadpool_value,
+            "renderer_num_workers": renderer_num_workers_value,
         }
 
     @classmethod

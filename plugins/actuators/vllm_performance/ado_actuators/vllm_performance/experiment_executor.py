@@ -10,8 +10,8 @@ import traceback
 import ray
 from ado_actuators.vllm_performance.actuator_parameters import (
     VLLMPerformanceTestParameters,
-from ado_actuators.vllm_performance.cache_utils import CacheKeyBuilder
 )
+from ado_actuators.vllm_performance.cache_utils import CacheKeyBuilder
 from ado_actuators.vllm_performance.env_manager import (
     Environment,
     EnvironmentManager,
@@ -27,6 +27,7 @@ from ado_actuators.vllm_performance.k8s.create_environment import (
 from ado_actuators.vllm_performance.k8s.yaml_support.build_components import (
     VLLMDtype,
 )
+from ado_actuators.vllm_performance.version_utils import VLLMVersionChecker
 from ado_actuators.vllm_performance.vllm_performance_test.benchmark_models import (
     BenchmarkParameters,
     BenchmarkResult,
@@ -169,6 +170,14 @@ def _create_environment(
                 )
             )
 
+            # Check vLLM version and enable threadpool if supported
+            image_value = values.get("image", "")
+            threadpool_requested = int(values.get("threadpool", 1))
+            enable_threadpool = VLLMVersionChecker.supports_threadpool(
+                image_value, threadpool_requested
+            )
+            threadpool_value = 1 if enable_threadpool else 0
+
             for attempt in range(3):
                 console.put.remote(
                     message=RichConsoleSpinnerMessage(
@@ -205,6 +214,8 @@ def _create_environment(
                         skip_tokenizer_init=values.get("skip_tokenizer_init", 0) == 1,
                         enforce_eager=values.get("enforce_eager", 0) == 1,
                         io_processor_plugin=values.get("io_processor_plugin"),
+                        threadpool=threadpool_value,
+                        renderer_num_workers=int(values.get("renderer_num_workers")),
                         otlp_traces_endpoint=otlp_traces_endpoint,
                         check_interval=check_interval,
                         timeout=timeout,

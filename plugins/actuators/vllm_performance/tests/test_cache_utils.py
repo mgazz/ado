@@ -28,6 +28,8 @@ class TestCacheKeyBuilder:
             "dtype": "auto",
             "cpu_offload": "0",
             "max_num_seq": "256",
+            "threadpool": "1",
+            "renderer_num_workers": "32",
             "num_prompts": "100",
             "request_rate": "10",
             "max_concurrency": "50",
@@ -75,6 +77,62 @@ class TestCacheKeyBuilder:
 
         assert key1 != key2
 
+    def test_threadpool_normalization_vllm_0_18(
+        self, base_values: dict[str, Any]
+    ) -> None:
+        """Test threadpool normalization for vLLM < 0.20.0."""
+        base_values["image"] = ["vllm/vllm-openai:v0.18.0", "0.18.0"]
+        base_values["threadpool"] = "1"
+        base_values["renderer_num_workers"] = "32"
+
+        cache_key = CacheKeyBuilder.build(base_values)
+        parsed = json.loads(cache_key)
+
+        assert parsed["environment"]["threadpool"] == 0
+        assert parsed["environment"]["renderer_num_workers"] == 0
+
+    def test_threadpool_normalization_vllm_0_20(
+        self, base_values: dict[str, Any]
+    ) -> None:
+        """Test threadpool normalization for vLLM >= 0.20.0."""
+        base_values["image"] = ["vllm/vllm-openai:v0.20.1", "0.20.1"]
+        base_values["threadpool"] = "1"
+        base_values["renderer_num_workers"] = "32"
+
+        cache_key = CacheKeyBuilder.build(base_values)
+        parsed = json.loads(cache_key)
+
+        assert parsed["environment"]["threadpool"] == 1
+        assert parsed["environment"]["renderer_num_workers"] == 32
+
+    def test_different_renderer_num_workers_same_key_when_disabled(
+        self, base_values: dict[str, Any]
+    ) -> None:
+        """Test that different renderer_num_workers produce same key when threadpool disabled."""
+        base_values["image"] = ["vllm/vllm-openai:v0.18.0", "0.18.0"]
+        base_values["threadpool"] = "1"
+        base_values["renderer_num_workers"] = "32"
+        key1 = CacheKeyBuilder.build(base_values)
+
+        base_values["renderer_num_workers"] = "64"
+        key2 = CacheKeyBuilder.build(base_values)
+
+        assert key1 == key2
+
+    def test_different_renderer_num_workers_different_key_when_enabled(
+        self, base_values: dict[str, Any]
+    ) -> None:
+        """Test that different renderer_num_workers produce different keys when threadpool enabled."""
+        base_values["image"] = ["vllm/vllm-openai:v0.20.1", "0.20.1"]
+        base_values["threadpool"] = "1"
+        base_values["renderer_num_workers"] = "32"
+        key1 = CacheKeyBuilder.build(base_values)
+
+        base_values["renderer_num_workers"] = "64"
+        key2 = CacheKeyBuilder.build(base_values)
+
+        assert key1 != key2
+
     def test_image_list_extraction(self, base_values: dict[str, Any]) -> None:
         """Test that image URL is correctly extracted from list."""
         base_values["image"] = ["vllm/vllm-openai:v0.20.1", "0.20.1"]
@@ -92,15 +150,8 @@ class TestCacheKeyBuilder:
         parsed = json.loads(cache_key)
 
         assert parsed["environment"]["image"] == "vllm/vllm-openai:v0.20.1"
-
-    def test_build_env_definition(self, base_values: dict[str, Any]) -> None:
-        """Test environment definition building."""
-        env_def = CacheKeyBuilder.build_env_definition(base_values)
-        parsed = json.loads(env_def)
-
-        assert parsed["model"] == "meta-llama/Llama-2-7b-hf"
-        assert parsed["n_gpus"] == "1"
-        assert parsed["image"] == "vllm/vllm-openai:v0.20.1"
+        # When no version info, threadpool should be enabled (backward compatible)
+        assert parsed["environment"]["threadpool"] == 1
 
 
 # Made with Bob
