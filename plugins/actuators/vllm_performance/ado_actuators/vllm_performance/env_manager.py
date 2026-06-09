@@ -25,6 +25,17 @@ from orchestrator.utilities.pydantic import validate_rfc_1123
 
 logger = logging.getLogger(__name__)
 
+from dataclasses import dataclass
+
+
+@dataclass
+class CachedMeasurement:
+    """Cached measurement result."""
+
+    measurements: list
+    error: str | None
+
+
 
 class EnvironmentState(Enum):
     """
@@ -133,6 +144,9 @@ class EnvironmentManager:
         self.in_cluster = in_cluster
         self.verify_ssl = verify_ssl
         self.otlp_traces_endpoint = otlp_traces_endpoint
+        # Measurement cache for reusing results across entities with identical
+        # environment and benchmark parameters
+        self.measurement_cache: dict[str, CachedMeasurement] = {}
 
         # component manager for cleanup
         self.manager = ComponentsManager(
@@ -143,6 +157,19 @@ class EnvironmentManager:
             pvc_name=pvc_name,
             pvc_template=pvc_template,
         )
+
+    def get_cached_measurement(self, cache_key: str) -> CachedMeasurement | None:
+        """Get cached measurement result."""
+        return self.measurement_cache.get(cache_key)
+
+    def cache_measurement(
+        self, cache_key: str, measurements: list, error: str | None
+    ) -> None:
+        """Cache measurement result for reuse."""
+        self.measurement_cache[cache_key] = CachedMeasurement(
+            measurements=measurements, error=error
+        )
+        logger.debug(f"Cached measurement for key: {cache_key}")
 
     def _delete_environment_k8s_resources(self, k8s_name: str) -> None:
         """

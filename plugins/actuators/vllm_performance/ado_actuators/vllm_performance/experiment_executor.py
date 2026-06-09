@@ -10,6 +10,7 @@ import traceback
 import ray
 from ado_actuators.vllm_performance.actuator_parameters import (
     VLLMPerformanceTestParameters,
+from ado_actuators.vllm_performance.cache_utils import CacheKeyBuilder
 )
 from ado_actuators.vllm_performance.env_manager import (
     Environment,
@@ -71,20 +72,7 @@ def _build_entity_env(values: dict[str, str]) -> str:
     :param values: experiment values
     :return: definition
     """
-    env_values = {
-        "model": values.get("model"),
-        "image": values.get("image"),
-        "n_gpus": values.get("n_gpus"),
-        "gpu_type": values.get("gpu_type"),
-        "n_cpus": values.get("n_cpus"),
-        "memory": values.get("memory"),
-        "max_batch_tokens": values.get("max_batch_tokens"),
-        "gpu_memory_utilization": values.get("gpu_memory_utilization"),
-        "dtype": values.get("dtype"),
-        "cpu_offload": values.get("cpu_offload"),
-        "max_num_seq": values.get("max_num_seq"),
-    }
-    return json.dumps(env_values)
+    return CacheKeyBuilder.build_env_definition(values)
 
 
 def _create_environment(
@@ -387,6 +375,26 @@ def run_resource_and_workload_experiment(
         started_benchmarking = False
         try:
             values = experiment.propertyValuesFromEntity(entity=entity)
+            cache_key = CacheKeyBuilder.build(values)
+            logger.info("cache_key: %s", cache_key)
+
+            cached_result = ray.get(
+                env_manager.get_cached_measurement.remote(cache_key)
+            )
+            if cached_result is not None:
+                logger.info(
+                    f"Reusing cached measurement for entity {entity.identifier} "
+                    f"(identical environment and benchmark parameters)"
+                )
+                measurements.append(
+                    create_measurement_result(
+                        identifier=entity.identifier,
+                        measurements=cached_result.measurements,
+                        error=cached_result.error,
+                        reference=request.experimentReference,
+                    )
+                )
+                continue
 
             logger.info(f"Creating K8s environment for {entity.identifier}")
 
@@ -524,6 +532,7 @@ def run_resource_and_workload_experiment(
                     error=None,
                     reference=request.experimentReference,
                 )
+            env_manager.cache_measurement.remote(cache_key, measured_values, None)
             )
         finally:
             if started_benchmarking:
