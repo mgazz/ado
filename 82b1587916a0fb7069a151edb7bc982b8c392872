@@ -1,0 +1,1 @@
+{"id":"deeb540d-b9d5-4644-b022-a4d2590ccb34","ts":"2026-06-16T15:41:15.286Z","version":"1.0.2","toolName":"apply_diff","taskID":"5a994826-f6ff-4b4d-a6b5-9310d27b7c0b","path":"orchestrator/core/discoveryspace/group_samplers.py","numLinesApplied":2,"currentRange":{"startLine":61,"endLine":62}}
