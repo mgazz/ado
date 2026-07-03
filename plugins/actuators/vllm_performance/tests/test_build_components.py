@@ -3,6 +3,8 @@
 
 """Tests for build_components module, specifically renderer_num_workers handling."""
 
+from typing import Any
+
 from ado_actuators.vllm_performance.k8s.yaml_support.build_components import (
     ComponentsYaml,
 )
@@ -91,7 +93,7 @@ class TestRendererNumWorkersInVllmArgs:
 class TestAgentFlagsInVllmArgs:
     """Test that agent-related vLLM flags are correctly handled in vLLM serve args."""
 
-    def _base_yaml(self, **kwargs) -> list:
+    def _base_yaml(self, **kwargs: Any) -> list:  # noqa: ANN401
         """Return vllm serve args from a minimal deployment spec."""
         result = ComponentsYaml.deployment_yaml(
             k8s_name="test-deployment",
@@ -117,45 +119,53 @@ class TestAgentFlagsInVllmArgs:
     def test_reasoning_parser_none_not_in_args(self) -> None:
         """When reasoning_parser is None, --reasoning-parser should NOT be in args."""
         args = self._base_yaml(reasoning_parser=None)
-        assert "--reasoning-parser" not in args, f"--reasoning-parser found unexpectedly in: {args}"
+        assert (
+            "--reasoning-parser" not in args
+        ), f"--reasoning-parser found unexpectedly in: {args}"
 
     def test_tool_call_parser_in_args(self) -> None:
         """When tool_call_parser is set, --tool-call-parser <value> should be in args."""
         args = self._base_yaml(tool_call_parser="qwen3_coder")
         assert "--tool-call-parser" in args, f"--tool-call-parser not found in: {args}"
         idx = args.index("--tool-call-parser")
-        assert args[idx + 1] == "qwen3_coder", f"Expected 'qwen3_coder', got '{args[idx + 1]}'"
+        assert (
+            args[idx + 1] == "qwen3_coder"
+        ), f"Expected 'qwen3_coder', got '{args[idx + 1]}'"
 
     def test_tool_call_parser_none_not_in_args(self) -> None:
         """When tool_call_parser is None, --tool-call-parser should NOT be in args."""
         args = self._base_yaml(tool_call_parser=None)
-        assert "--tool-call-parser" not in args, f"--tool-call-parser found unexpectedly in: {args}"
+        assert (
+            "--tool-call-parser" not in args
+        ), f"--tool-call-parser found unexpectedly in: {args}"
 
     def test_language_model_only_in_args(self) -> None:
         """When language_model_only=True, --language-model-only flag should be in args."""
         args = self._base_yaml(language_model_only=True)
-        assert "--language-model-only" in args, f"--language-model-only not found in: {args}"
+        assert (
+            "--language-model-only" in args
+        ), f"--language-model-only not found in: {args}"
 
     def test_language_model_only_false_not_in_args(self) -> None:
         """When language_model_only=False, --language-model-only should NOT be in args."""
         args = self._base_yaml(language_model_only=False)
-        assert "--language-model-only" not in args, (
-            f"--language-model-only found unexpectedly in: {args}"
-        )
+        assert (
+            "--language-model-only" not in args
+        ), f"--language-model-only found unexpectedly in: {args}"
 
     def test_enable_auto_tool_choice_in_args(self) -> None:
         """When enable_auto_tool_choice=True, --enable-auto-tool-choice flag should be in args."""
         args = self._base_yaml(enable_auto_tool_choice=True)
-        assert "--enable-auto-tool-choice" in args, (
-            f"--enable-auto-tool-choice not found in: {args}"
-        )
+        assert (
+            "--enable-auto-tool-choice" in args
+        ), f"--enable-auto-tool-choice not found in: {args}"
 
     def test_enable_auto_tool_choice_false_not_in_args(self) -> None:
         """When enable_auto_tool_choice=False, --enable-auto-tool-choice should NOT be in args."""
         args = self._base_yaml(enable_auto_tool_choice=False)
-        assert "--enable-auto-tool-choice" not in args, (
-            f"--enable-auto-tool-choice found unexpectedly in: {args}"
-        )
+        assert (
+            "--enable-auto-tool-choice" not in args
+        ), f"--enable-auto-tool-choice found unexpectedly in: {args}"
 
     def test_max_model_len_in_args(self) -> None:
         """When max_model_len is set, --max-model-len <value> should be in args."""
@@ -167,4 +177,6 @@ class TestAgentFlagsInVllmArgs:
     def test_max_model_len_none_not_in_args(self) -> None:
         """When max_model_len is None, --max-model-len should NOT be in args."""
         args = self._base_yaml(max_model_len=None)
-        assert "--max-model-len" not in args, f"--max-model-len found unexpectedly in: {args}"
+        assert (
+            "--max-model-len" not in args
+        ), f"--max-model-len found unexpectedly in: {args}"
