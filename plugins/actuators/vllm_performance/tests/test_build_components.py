@@ -6,7 +6,6 @@
 from typing import Any
 
 import pytest
-
 from ado_actuators.vllm_performance.k8s.yaml_support.build_components import (
     ComponentsYaml,
 )
