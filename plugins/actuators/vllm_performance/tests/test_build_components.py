@@ -5,6 +5,8 @@
 
 from typing import Any
 
+import pytest
+
 from ado_actuators.vllm_performance.k8s.yaml_support.build_components import (
     ComponentsYaml,
 )
@@ -180,3 +182,70 @@ class TestAgentFlagsInVllmArgs:
         assert (
             "--max-model-len" not in args
         ), f"--max-model-len found unexpectedly in: {args}"
+
+
+class TestParserArgWhitespaceValidation:
+    """Test that whitespace in reasoning_parser / tool_call_parser is rejected."""
+
+    def _call(self, **kwargs: Any) -> None:  # noqa: ANN401
+        """Invoke deployment_yaml with a minimal valid set of required args."""
+        ComponentsYaml.deployment_yaml(
+            k8s_name="test-deployment",
+            model="test-model",
+            n_gpus=1,
+            gpu_type="nvidia-tesla-t4",
+            n_cpus=4,
+            memory="16Gi",
+            max_num_seq=256,
+            **kwargs,
+        )
+
+    # --- reasoning_parser ---
+
+    def test_reasoning_parser_with_leading_space_raises(self) -> None:
+        """reasoning_parser with a leading space must raise ValueError."""
+        with pytest.raises(ValueError, match="reasoning_parser"):
+            self._call(reasoning_parser=" qwen3")
+
+    def test_reasoning_parser_with_trailing_space_raises(self) -> None:
+        """reasoning_parser with a trailing space must raise ValueError."""
+        with pytest.raises(ValueError, match="reasoning_parser"):
+            self._call(reasoning_parser="qwen3 ")
+
+    def test_reasoning_parser_with_embedded_space_raises(self) -> None:
+        """reasoning_parser with an embedded space (flag injection attempt) must raise ValueError."""
+        with pytest.raises(ValueError, match="reasoning_parser"):
+            self._call(reasoning_parser="qwen3 --disable-log-requests")
+
+    def test_reasoning_parser_with_tab_raises(self) -> None:
+        """reasoning_parser containing a tab character must raise ValueError."""
+        with pytest.raises(ValueError, match="reasoning_parser"):
+            self._call(reasoning_parser="qwen3\t")
+
+    def test_reasoning_parser_valid_value_accepted(self) -> None:
+        """reasoning_parser with a clean value must not raise."""
+        self._call(reasoning_parser="qwen3")  # must not raise
+
+    def test_reasoning_parser_none_accepted(self) -> None:
+        """reasoning_parser=None must not raise."""
+        self._call(reasoning_parser=None)  # must not raise
+
+    # --- tool_call_parser ---
+
+    def test_tool_call_parser_with_embedded_space_raises(self) -> None:
+        """tool_call_parser with an embedded space must raise ValueError."""
+        with pytest.raises(ValueError, match="tool_call_parser"):
+            self._call(tool_call_parser="qwen3_coder --some-flag")
+
+    def test_tool_call_parser_with_newline_raises(self) -> None:
+        """tool_call_parser containing a newline must raise ValueError."""
+        with pytest.raises(ValueError, match="tool_call_parser"):
+            self._call(tool_call_parser="qwen3_coder\n")
+
+    def test_tool_call_parser_valid_value_accepted(self) -> None:
+        """tool_call_parser with a clean value must not raise."""
+        self._call(tool_call_parser="qwen3_coder")  # must not raise
+
+    def test_tool_call_parser_none_accepted(self) -> None:
+        """tool_call_parser=None must not raise."""
+        self._call(tool_call_parser=None)  # must not raise

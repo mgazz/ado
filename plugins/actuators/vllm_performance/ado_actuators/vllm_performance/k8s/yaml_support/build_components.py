@@ -153,6 +153,18 @@ class ComponentsYaml:
             logger.error(error_string)
             raise ValueError(error_string) from exception
 
+        # Validate string args that are passed verbatim into the container args list.
+        for param_name, param_value in [
+            ("reasoning_parser", reasoning_parser),
+            ("tool_call_parser", tool_call_parser),
+        ]:
+            if param_value is not None and any(c.isspace() for c in param_value):
+                raise ValueError(
+                    f"Invalid value for '{param_name}': whitespace is not allowed "
+                    f"(got '{param_value}'). Values are passed verbatim into the "
+                    f"container args array."
+                )
+
         # Update metadata
         metadata = deployment_yaml["metadata"]
         metadata["name"] = k8s_name
