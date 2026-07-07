@@ -569,7 +569,13 @@ def run_resource_and_workload_experiment(
                     dataset=benchmark_parameters.dataset,
                     burstiness=benchmark_parameters.burstiness,
                 )
-            elif benchmark_parameters.dataset == "bfcl":
+            elif (
+                experiment.identifier
+                in [
+                    "test-text-agent-v1",
+                ]
+                and benchmark_parameters.dataset == "bfcl"
+            ):
                 logger.info("Using vLLM BFCL benchmark for deployment")
                 result = execute_bfcl_benchmark(
                     base_url=benchmark_parameters.endpoint,
@@ -751,7 +757,13 @@ def run_workload_experiment(
                     dataset=benchmark_parameters.dataset,
                     burstiness=benchmark_parameters.burstiness,
                 )
-            elif benchmark_parameters.dataset == "bfcl":
+            elif (
+                experiment.identifier
+                in [
+                    "test-text-agent-endpoint-v1",
+                ]
+                and benchmark_parameters.dataset == "bfcl"
+            ):
                 logger.info("Using vLLM BFCL benchmark for endpoint")
                 result = execute_bfcl_benchmark(
                     base_url=benchmark_parameters.endpoint,
